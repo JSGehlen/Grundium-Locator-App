@@ -12,7 +12,7 @@ interface EntityCardProps {
 
 const EntityCard: React.FC<EntityCardProps> = ({ entity }) => {
   return (
-    <CardSpotlight>
+    <CardSpotlight className="pb-6">
       {entity.image && (
         <Image
         priority

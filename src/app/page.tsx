@@ -1,9 +1,11 @@
-/** @format */
 'use client';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useState } from 'react';
 import Map, { Marker, Source, Layer } from 'react-map-gl';
-import { Button } from '@/components/ui/button'; // Adjust the path as necessary
+import { fetchData, Entity } from '@/lib/fetchData';
+
+// UI Element Imports
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import EntityCard from '@/components/EntityCard';
 import {
@@ -11,9 +13,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { SewingPinIcon, DiscordLogoIcon } from '@radix-ui/react-icons';
-
-
 import {
   Card,
   CardContent,
@@ -22,7 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-
 import {
   Dialog,
   DialogContent,
@@ -31,13 +29,57 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-import { fetchData, Entity } from '@/lib/fetchData';
+import { SewingPinIcon, DiscordLogoIcon } from '@radix-ui/react-icons';
 
 interface LngLat {
   lat: number;
   long: number;
 }
+
+/**
+ * Home component that renders the main page of the Grundium Locator App.
+ *
+ * @component
+ *
+ * @returns {JSX.Element} The rendered component.
+ *
+ * @description
+ * This component initializes the state for entities, new markers, found entities,
+ * dialog visibility, info collapse state, found entities collapse state, and zoom level.
+ * It fetches data on mount and sets the entities state. It handles map clicks to set new markers,
+ * marker clicks to add found entities, and zoom events to update the zoom level. It also calculates
+ * distances and directions between coordinates and generates GeoJSON lines for map visualization.
+ *
+ * @state {Entity[]} entities - The list of entities fetched from the server.
+ * @state {LngLat | null} newMarker - The coordinates of the new marker set by the user.
+ * @state {Entity[]} foundEntities - The list of entities found by the user.
+ * @state {boolean} isDialogOpen - The state to control the visibility of the dialog.
+ * @state {boolean} isInfoCollapsed - The state to control the collapse of the info section.
+ * @state {boolean} isFoundEntitiesCollapsed - The state to control the collapse of the found entities section.
+ * @state {number} zoomLevel - The current zoom level of the map.
+ *
+ * @constant {string} mapboxToken - The Mapbox access token from environment variables.
+ *
+ * @function handleShowFoundEntities - Opens the dialog to show found entities.
+ *
+ * @function useEffect - Fetches data on component mount and sets the entities state.
+ *
+ * @function handleMarkerClick - Handles clicks on markers to add entities to the found list and show a toast notification.
+ *
+ * @function handleMapClick - Handles clicks on the map to set a new marker.
+ *
+ * @function calculateDistance - Calculates the distance between two coordinates using the Haversine formula.
+ *
+ * @function getDirection - Calculates the direction from one coordinate to another.
+ *
+ * @function handleZoomEnd - Updates the zoom level state when the zoom event ends.
+ *
+ * @function getIconColor - Returns the color of the icon based on the zoom level.
+ *
+ * @function getGeoJsonLine - Generates a GeoJSON line feature collection for the map visualization.
+ *
+ * @returns {JSX.Element} The rendered component.
+ */
 
 export default function Home() {
   const [entities, setEntities] = useState<Entity[]>([]);
@@ -46,6 +88,9 @@ export default function Home() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isInfoCollapsed, setInfoCollapsed] = useState(true);
+  const [isFoundEntitiesCollapsed, setIsFoundEntitiesCollapsed] =
+    useState(true);
+  const [zoomLevel, setZoomLevel] = useState(2);
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -67,12 +112,10 @@ export default function Home() {
   }, []);
 
   const handleMarkerClick = (entity: Entity) => {
-    toast(
-      {
-        title: 'Entity Found',
-        description: `You found ${entity.name}`
-      },
-    );
+    toast({
+      title: 'Entity Found',
+      description: `You found ${entity.name}`,
+    });
     if (!foundEntities.includes(entity)) {
       setFoundEntities((prev) => [...prev, entity]);
     }
@@ -112,7 +155,7 @@ export default function Home() {
     return R * c;
   };
 
-  // Function to get direction from clicked marker to another entity
+
   const getDirection = (
     lat1: number,
     lon1: number,
@@ -120,7 +163,7 @@ export default function Home() {
     lon2: number
   ) => {
     let angle = Math.atan2(lat2 - lat1, lon2 - lon1) * (180 / Math.PI);
-    if (angle < 0) angle += 360; // Normalize to 0-360 degrees
+    if (angle < 0) angle += 360;
 
     if (angle >= 22.5 && angle < 67.5) return 'Northeast';
     if (angle >= 67.5 && angle < 112.5) return 'North';
@@ -132,21 +175,32 @@ export default function Home() {
     return 'East';
   };
 
-  // Create GeoJSON for the lines
+  const handleZoomEnd = (event: any) => {
+    const { zoom } = event.viewState;
+    setZoomLevel(zoom);
+  };
+
+
+const getIconColor = () => {
+  if (zoomLevel < 5) return 'text-[#2A2A29]';
+  if (zoomLevel < 10) return 'text-red-600';
+  return 'text-red-300';
+};
+console.log(zoomLevel)
   const getGeoJsonLine = () => {
     if (!newMarker) return null;
 
     return {
       type: 'FeatureCollection',
       features: entities
-        .filter((entity) => !foundEntities.includes(entity)) // Filter out found entities
+        .filter((entity) => !foundEntities.includes(entity))
         .map((entity) => ({
           type: 'Feature',
           geometry: {
             type: 'LineString',
             coordinates: [
-              [newMarker.long, newMarker.lat], // New marker coordinates
-              [entity.long, entity.lat], // Existing marker coordinates
+              [newMarker.long, newMarker.lat],
+              [entity.long, entity.lat],
             ],
           },
           properties: {
@@ -155,7 +209,7 @@ export default function Home() {
               newMarker.long,
               entity.lat,
               entity.long
-            ), // Store the calculated distance
+            ),
           },
         })),
     };
@@ -163,16 +217,18 @@ export default function Home() {
 
   return (
     <>
-      <div className="h-screen w-full bg-black relative flex flex-col items-center justify-center">
+      <div className="h-dvh lg:h-screen w-full bg-black relative flex flex-col items-center justify-center">
         <div className="flex-grow w-full h-full relative">
           <Card className="absolute left-4 top-4 lg:left-6 lg:top-6 z-50 max-w-prose">
             <Collapsible open={isInfoCollapsed} onOpenChange={setInfoCollapsed}>
               <CardHeader>
                 <CardTitle>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     How to play
-                    <CollapsibleTrigger className="font-thin">
-                      {isInfoCollapsed ? 'Close info' : 'Open info'}
+                    <CollapsibleTrigger className="font-thin" asChild>
+                      <Button variant="secondary">
+                        {isInfoCollapsed ? 'Close info' : 'Open info'}
+                      </Button>
                     </CollapsibleTrigger>
                   </div>
                 </CardTitle>
@@ -193,8 +249,11 @@ export default function Home() {
                     <li className="text-sm text-neutral-500 my-1">
                       Once you have set your location, you will see a card
                       showing the distance between your location and the
-                      entities, as well as a coloured line indicating the
-                      distance.
+                      entities.
+                    </li>
+                    <li className="text-sm text-neutral-500 my-1">
+                      If you are close enough to an entity a coloured line will
+                      appear indicating the distance to an entity near by.
                     </li>
                     <li className="text-sm text-neutral-500 my-1">
                       The color of the line indicates the distance to the
@@ -212,74 +271,89 @@ export default function Home() {
             </Collapsible>
           </Card>
           {newMarker && (
-            <Card className="absolute right-4 bottom-4 lg:right-10 lg:top-10 lg:bottom-auto z-50">
-              <CardHeader>
-                <CardTitle>Entities</CardTitle>
-                <CardDescription>
-                  {entities.length === foundEntities.length
-                    ? 'You have found all entities!'
-                    : 'Distance to Entities from your location'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {newMarker && (
-                  <>
-                    {entities
-                      .filter((entity) => !foundEntities.includes(entity)) // List only not found entities
-                      .map((entity) => {
-                        // Calculate distance and direction for not found entities
-                        const distance = calculateDistance(
-                          newMarker.lat,
-                          newMarker.long,
-                          entity.lat,
-                          entity.long
-                        ).toFixed(2);
-                        const direction = getDirection(
-                          newMarker.lat,
-                          newMarker.long,
-                          entity.lat,
-                          entity.long
-                        );
+            <Card className="absolute right-4 bottom-4 lg:right-6 lg:top-6 lg:bottom-auto z-50">
+              <Collapsible
+                open={isFoundEntitiesCollapsed}
+                onOpenChange={setIsFoundEntitiesCollapsed}
+              >
+                <CardHeader>
+                  <CardTitle>Entities</CardTitle>
+                  <CardDescription>
+                    {entities.length === foundEntities.length
+                      ? 'You have found all entities!'
+                      : 'Distance to Entities from your location'}
+                  </CardDescription>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent>
+                    {newMarker && (
+                      <>
+                        {entities
+                          .filter((entity) => !foundEntities.includes(entity))
+                          .map((entity) => {
+                            const distance = calculateDistance(
+                              newMarker.lat,
+                              newMarker.long,
+                              entity.lat,
+                              entity.long
+                            ).toFixed(2);
+                            const direction = getDirection(
+                              newMarker.lat,
+                              newMarker.long,
+                              entity.lat,
+                              entity.long
+                            );
 
-                        return {
-                          ...entity,
-                          distance,
-                          direction,
-                        };
-                      })
-                      .sort(
-                        (a, b) =>
-                          parseFloat(a.distance) - parseFloat(b.distance)
-                      ) // Sort by distance
-                      .map((entity) => (
-                        <p
-                          key={entity.id}
-                          className="text-sm text-muted-foreground"
-                        >
-                          <strong>{entity.name}</strong> is {entity.distance} km{' '}
-                          {entity.direction}
-                        </p>
-                      ))}
-                  </>
-                )}
-              </CardContent>
-              {foundEntities.length > 0 && (
+                            return {
+                              ...entity,
+                              distance,
+                              direction,
+                            };
+                          })
+                          .sort(
+                            (a, b) =>
+                              parseFloat(b.distance) - parseFloat(a.distance)
+                          )
+                          .map((entity) => (
+                            <p
+                              key={entity.id}
+                              className="text-sm text-muted-foreground"
+                            >
+                              <strong>{entity.name}</strong> is{' '}
+                              {entity.distance} km {entity.direction}
+                            </p>
+                          ))}
+                      </>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
                 <CardFooter>
-                  <Button
-                    onClick={handleShowFoundEntities}
-                    className="w-full lg:w-auto"
-                  >
-                    Show Found Entities
-                  </Button>
+                  <div className="flex flex-row gap-2 lg:flex-row">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="secondary">
+                        {isFoundEntitiesCollapsed
+                          ? 'Hide Entity List'
+                          : 'Show Entity List'}
+                      </Button>
+                    </CollapsibleTrigger>
+                    {foundEntities.length > 0 && (
+                      <Button
+                        onClick={handleShowFoundEntities}
+                        className="w-full lg:w-auto"
+                      >
+                        Show Found Entities
+                      </Button>
+                    )}
+                  </div>
                 </CardFooter>
-              )}
+              </Collapsible>
             </Card>
           )}
           <Map
             mapboxAccessToken={mapboxToken}
             initialViewState={{
-              longitude: 23.7609, // Longitude for Tampere
-              latitude: 61.4978, // Latitude for Tampere
+              longitude: 23.7609,
+              latitude: 61.4978,
               zoom: 2,
               pitch: 0,
               bearing: 0,
@@ -288,10 +362,11 @@ export default function Home() {
             mapStyle="mapbox://styles/mapbox/dark-v11"
             maxZoom={20}
             onClick={handleMapClick}
+            onZoom={(e) => setZoomLevel(e.viewState.zoom)}
           >
             {entities.map(
               (entity) =>
-                !foundEntities.includes(entity) && ( // Only show if not found
+                !foundEntities.includes(entity) && (
                   <Marker
                     key={entity.id}
                     longitude={entity.long}
@@ -299,7 +374,9 @@ export default function Home() {
                     anchor="bottom"
                     onClick={() => handleMarkerClick(entity)}
                   >
-                    <div style={{ cursor: 'pointer', color: 'white' }}><DiscordLogoIcon  height="0.75rem" className="text-rose-700" /></div>
+                    <div className={`cursor-pointer ${getIconColor()}`}>
+                      <DiscordLogoIcon />
+                    </div>
                   </Marker>
                 )
             )}
@@ -311,7 +388,7 @@ export default function Home() {
                 anchor="bottom"
               >
                 <div style={{ cursor: 'pointer', color: 'yellow' }}>
-                 <SewingPinIcon className="text-neutral-100" />
+                  <SewingPinIcon className="text-neutral-100" />
                 </div>
               </Marker>
             )}
@@ -330,25 +407,19 @@ export default function Home() {
                       ['linear'],
                       ['get', 'distance'],
                       0,
-                      'rgba(255, 0, 0, 0.25)', // Red for very close
-                      1000,
-                      'rgba(255, 165, 0, 0.25)', // Orange for 1000 km
-                      2000,
-                      'rgba(255, 255, 0, 0.05)', // Yellow for 2000 km
-                      3000,
-                      'rgba(0, 255, 0, 0.0.05)', // Green for 3000 km
-                      5000,
-                      'rgba(0, 255, 255, 0.05)', // Cyan for 5000 km
-                      8000,
-                      'rgba(0, 0, 255, 0.05)', // Blue for 8000 km
-                      12000,
-                      'rgba(75, 0, 130, 0.05)', // Indigo for 12000 km
-                      15000,
-                      'rgba(148, 0, 211, 0.05)', // Violet for 15000 km
-                      20000,
-                      'rgba(0, 0, 0, 0.05)', // Fully transparent for beyond 20000 km
+                      'rgba(255, 255, 255, 1)',
+                      50,
+                      'rgba(255, 255, 0, 1)',
+                      100,
+                      'rgba(255, 165, 0, 0.8)',
+                      200,
+                      'rgba(255, 69, 0, 0.75)',
+                      300,
+                      'rgba(255, 69, 255, 0.5)',
+                      400,
+                      'rgba(0, 0, 0, 0.0)',
                     ],
-                    'line-width': 0.5,
+                    'line-width': 2,
                   }}
                 />
               </Source>
@@ -356,14 +427,14 @@ export default function Home() {
           </Map>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-h-[60vh]">
+          <DialogContent className="max-h-[calc(100dvh-1.5rem)] lg:max-h-[80vh] overflow-hidden pb-6">
             <DialogHeader>
               <DialogTitle>Found Entities</DialogTitle>
               <DialogDescription>
                 You have successfully found and captured the following entities
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="w-full max-h-[50vh]">
+            <ScrollArea className="w-full h-full max-h-[35rem] lg:max-h-[60vh]">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {foundEntities.map((entity) => (
                   <EntityCard key={entity.id} entity={entity} />
