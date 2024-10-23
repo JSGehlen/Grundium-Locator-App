@@ -3,6 +3,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useState } from 'react';
 import Map, { Marker, Source, Layer } from 'react-map-gl';
 import { fetchData, Entity } from '@/lib/fetchData';
+import { useWindowSize } from 'usehooks-ts';
 
 // UI Element Imports
 import { Button } from '@/components/ui/button';
@@ -89,7 +90,7 @@ export default function Home() {
   const [isFoundEntitiesCollapsed, setIsFoundEntitiesCollapsed] =
     useState(true);
   const [zoomLevel, setZoomLevel] = useState(2);
-  const isMobile = window.innerWidth <= 768;
+  const size = useWindowSize();
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -180,7 +181,6 @@ const getIconColor = () => {
   return 'text-red-300';
 };
 
-console.log(zoomLevel)
   const getGeoJsonLine = () => {
     if (!newMarker) return null;
 
@@ -218,7 +218,7 @@ console.log(zoomLevel)
               <CardHeader>
                 <CardTitle>
                   <div className="flex justify-between items-center">
-                    How to play
+                    <h1 className="text-lg">How to play</h1>
                     <CollapsibleTrigger className="font-thin" asChild>
                       <Button variant="secondary">
                         {isInfoCollapsed ? 'Close info' : 'Open info'}
@@ -255,11 +255,14 @@ console.log(zoomLevel)
                       and the lighter the color, the closer you are.
                     </li>
                     <li className="text-sm text-neutral-500">
+                      To tag an entity as found, simply click on the colored icon
+                    </li>{' '}
+                    <li className="text-sm text-neutral-500">
                       To view more details of the found entity, please click on
                       the Show found entities button.
                     </li>
                   </ol>
-                  <p className="text-sm text-neutral-500 mt-2">Good luck!</p>
+                  <h2 className="text-sm mt-2">Good luck!</h2>
                 </CardContent>
               </CollapsibleContent>
             </Collapsible>
@@ -306,7 +309,7 @@ console.log(zoomLevel)
                           })
                           .sort(
                             (a, b) =>
-                              parseFloat(b.distance) - parseFloat(a.distance)
+                              parseFloat(a.distance) - parseFloat(b.distance)
                           )
                           .map((entity) => (
                             <p
@@ -348,7 +351,7 @@ console.log(zoomLevel)
             initialViewState={{
               longitude: 23.7609,
               latitude: 61.4978,
-              zoom: isMobile ? 1 : 2.5,
+              zoom: size.width && size.width > 768 ? 2.5 : 1,
               pitch: 0,
               bearing: 0,
             }}
@@ -368,8 +371,10 @@ console.log(zoomLevel)
                     anchor="bottom"
                     onClick={() => handleMarkerClick(entity)}
                   >
-                    <div className={`cursor-pointer ${getIconColor()} h-4 w-4 flex items-center justify-center lg:h-auto lg:w-auto`}>
-                      <DiscordLogoIcon className="h-full w-full"/>
+                    <div
+                      className={`cursor-pointer ${getIconColor()} h-4 w-4 flex items-center justify-center lg:h-auto lg:w-auto`}
+                    >
+                      <DiscordLogoIcon className="h-full w-full" />
                     </div>
                   </Marker>
                 )
