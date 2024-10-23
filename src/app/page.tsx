@@ -212,7 +212,7 @@ console.log(zoomLevel)
     <>
       <div className="h-dvh lg:h-screen w-full bg-black relative flex flex-col items-center justify-center">
         <div className="flex-grow w-full h-full relative">
-          <Card className="absolute left-4 top-4 lg:left-6 lg:top-6 z-50 max-w-prose">
+          <Card className="absolute left-4 top-4 right-4 lg:right-auto lg:left-6 lg:top-6 z-50 max-w-prose">
             <Collapsible open={isInfoCollapsed} onOpenChange={setInfoCollapsed}>
               <CardHeader>
                 <CardTitle>
@@ -264,7 +264,7 @@ console.log(zoomLevel)
             </Collapsible>
           </Card>
           {newMarker && (
-            <Card className="absolute right-4 bottom-4 lg:right-6 lg:top-6 lg:bottom-auto z-50">
+            <Card className="absolute left-4 right-4 bottom-4 lg:left-auto lg:right-6 lg:top-6 lg:bottom-auto z-50">
               <Collapsible
                 open={isFoundEntitiesCollapsed}
                 onOpenChange={setIsFoundEntitiesCollapsed}
@@ -321,9 +321,9 @@ console.log(zoomLevel)
                   </CardContent>
                 </CollapsibleContent>
                 <CardFooter>
-                  <div className="flex flex-row gap-2 lg:flex-row">
+                  <div className="flex flex-row gap-2 lg:flex-row w-full">
                     <CollapsibleTrigger asChild>
-                      <Button variant="secondary">
+                      <Button variant="secondary" className="w-full lg:w-auto">
                         {isFoundEntitiesCollapsed
                           ? 'Hide Entity List'
                           : 'Show Entity List'}
