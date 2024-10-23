@@ -367,8 +367,8 @@ console.log(zoomLevel)
                     anchor="bottom"
                     onClick={() => handleMarkerClick(entity)}
                   >
-                    <div className={`cursor-pointer ${getIconColor()}`}>
-                      <DiscordLogoIcon />
+                    <div className={`cursor-pointer ${getIconColor()} h-4 w-4 flex items-center justify-center lg:h-auto lg:w-auto`}>
+                      <DiscordLogoIcon className="h-full w-full"/>
                     </div>
                   </Marker>
                 )
