@@ -89,6 +89,7 @@ export default function Home() {
   const [isFoundEntitiesCollapsed, setIsFoundEntitiesCollapsed] =
     useState(true);
   const [zoomLevel, setZoomLevel] = useState(2);
+  const isMobile = window.innerWidth <= 768;
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -347,7 +348,7 @@ console.log(zoomLevel)
             initialViewState={{
               longitude: 23.7609,
               latitude: 61.4978,
-              zoom: 2,
+              zoom: isMobile ? 1 : 2.5,
               pitch: 0,
               bearing: 0,
             }}
