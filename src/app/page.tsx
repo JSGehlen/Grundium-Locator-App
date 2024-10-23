@@ -72,8 +72,6 @@ interface LngLat {
  *
  * @function getDirection - Calculates the direction from one coordinate to another.
  *
- * @function handleZoomEnd - Updates the zoom level state when the zoom event ends.
- *
  * @function getIconColor - Returns the color of the icon based on the zoom level.
  *
  * @function getGeoJsonLine - Generates a GeoJSON line feature collection for the map visualization.
@@ -175,17 +173,12 @@ export default function Home() {
     return 'East';
   };
 
-  const handleZoomEnd = (event: any) => {
-    const { zoom } = event.viewState;
-    setZoomLevel(zoom);
-  };
-
-
 const getIconColor = () => {
   if (zoomLevel < 5) return 'text-[#2A2A29]';
   if (zoomLevel < 10) return 'text-red-600';
   return 'text-red-300';
 };
+
 console.log(zoomLevel)
   const getGeoJsonLine = () => {
     if (!newMarker) return null;
