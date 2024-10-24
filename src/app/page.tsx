@@ -340,7 +340,7 @@ export default function Home() {
                       <CollapsibleTrigger asChild>
                         <Button
                           variant="secondary"
-                          className="w-full lg:w-auto"
+                          className="flex-1"
                         >
                           {isFoundEntitiesCollapsed
                             ? 'Hide Entity List'
@@ -350,7 +350,7 @@ export default function Home() {
                       {foundEntities.length > 0 && (
                         <Button
                           onClick={handleShowFoundEntities}
-                          className="w-full lg:w-auto"
+                          className="flex-1"
                           variant="secondary"
                         >
                           Show Found Entities
