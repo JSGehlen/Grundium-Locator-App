@@ -28,57 +28,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SewingPinIcon, DiscordLogoIcon } from '@radix-ui/react-icons';
+import { MultiStepLoader as Loader } from '@/components/ui/multi-step-loader';
 
 interface LngLat {
   lat: number;
   long: number;
 }
-
-/**
- * Home component that renders the main page of the Grundium Locator App.
- *
- * @component
- *
- * @returns {JSX.Element} The rendered component.
- *
- * @description
- * This component initializes the state for entities, new markers, found entities,
- * dialog visibility, info collapse state, found entities collapse state, and zoom level.
- * It fetches data on mount and sets the entities state. It handles map clicks to set new markers,
- * marker clicks to add found entities, and zoom events to update the zoom level. It also calculates
- * distances and directions between coordinates and generates GeoJSON lines for map visualization.
- *
- * @state {Entity[]} entities - The list of entities fetched from the server.
- * @state {LngLat | null} newMarker - The coordinates of the new marker set by the user.
- * @state {Entity[]} foundEntities - The list of entities found by the user.
- * @state {boolean} isDialogOpen - The state to control the visibility of the dialog.
- * @state {boolean} isInfoCollapsed - The state to control the collapse of the info section.
- * @state {boolean} isFoundEntitiesCollapsed - The state to control the collapse of the found entities section.
- * @state {number} zoomLevel - The current zoom level of the map.
- *
- * @constant {string} mapboxToken - The Mapbox access token from environment variables.
- *
- * @function handleShowFoundEntities - Opens the dialog to show found entities.
- *
- * @function useEffect - Fetches data on component mount and sets the entities state.
- *
- * @function handleMarkerClick - Handles clicks on markers to add entities to the found list and show a toast notification.
- *
- * @function handleMapClick - Handles clicks on the map to set a new marker.
- *
- * @function calculateDistance - Calculates the distance between two coordinates using the Haversine formula.
- *
- * @function getDirection - Calculates the direction from one coordinate to another.
- *
- * @function getIconColor - Returns the color of the icon based on the zoom level.
- *
- * @function getGeoJsonLine - Generates a GeoJSON line feature collection for the map visualization.
- *
- * @returns {JSX.Element} The rendered component.
- */
 
 export default function Home() {
   const [entities, setEntities] = useState<Entity[]>([]);
@@ -91,14 +50,19 @@ export default function Home() {
     useState(true);
   const [zoomLevel, setZoomLevel] = useState(2);
   const size = useWindowSize();
-
+  const [loading, setLoading] = useState(true);
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
   const handleShowFoundEntities = () => {
     setIsDialogOpen(true);
   };
 
+  const handleShowInfo = () => {
+    setInfoCollapsed(true);
+  };
+
   useEffect(() => {
+    // Fetches entity data from the server and updates the entities state.
     const getData = async () => {
       const { entities, error } = await fetchData();
       if (error) {
@@ -111,6 +75,8 @@ export default function Home() {
     getData();
   }, []);
 
+  // Handles the click event on a marker to add the entity to the found list
+  // and displays a toast notification.
   const handleMarkerClick = (entity: Entity) => {
     toast({
       title: 'Entity Found',
@@ -121,6 +87,8 @@ export default function Home() {
     }
   };
 
+  // Sets a new marker based on the user's click location on the map.
+  // Extracts the longitude and latitude from the click event.
   const handleMapClick = (event: mapboxgl.MapMouseEvent) => {
     const { lngLat } = event;
 
@@ -134,6 +102,7 @@ export default function Home() {
     }
   };
 
+  // Calculates the distance between two geographic coordinates using the Haversine formula.
   const calculateDistance = (
     lat1: number,
     lon1: number,
@@ -155,7 +124,8 @@ export default function Home() {
     return R * c;
   };
 
-
+  // Determines the compass direction from one set of coordinates to another.
+  // Returns a string indicating the direction (e.g., Northeast, South).
   const getDirection = (
     lat1: number,
     lon1: number,
@@ -175,12 +145,15 @@ export default function Home() {
     return 'East';
   };
 
-const getIconColor = () => {
-  if (zoomLevel < 5) return 'text-[#2A2A29]';
-  if (zoomLevel < 10) return 'text-red-600';
-  return 'text-red-300';
-};
+  // Returns the color class for the marker icon based on the current zoom level.
+  const getIconColor = () => {
+    if (zoomLevel < 5) return 'text-[#2A2A29]';
+    if (zoomLevel < 10) return 'text-red-600';
+    return 'text-red-300';
+  };
 
+  // Generates a GeoJSON object representing lines connecting the new marker
+  // to all found entities, allowing for distance visualization on the map.
   const getGeoJsonLine = () => {
     if (!newMarker) return null;
 
@@ -209,240 +182,284 @@ const getIconColor = () => {
     };
   };
 
+  const loadingStates = [
+    { text: 'Intercepting alien communication...' },
+    { text: 'Decoding the encrypted message...' },
+    { text: 'Analyzing signal patterns...' },
+    { text: 'Detecting language...' },
+    { text: 'Identifying encryption type...' },
+    { text: 'Base64 detected...' },
+    { text: 'Decrypting message...' },
+    { text: 'Extracting coordinates...' },
+    { text: 'Locating key figures of the Rebel Army...' },
+    { text: 'Message decoded successfully!' },
+    { text: 'Ready for action, proceed to the map!' },
+  ];
+
+  useEffect(() => {
+    // Simulates the loading process by delaying the completion state,
+    // allowing for a loading animation to play before setting loading to false.
+    const loadingCompletion = async () => {
+      await new Promise((resolve) =>
+        setTimeout(resolve, loadingStates.length * 1000)
+      );
+      setLoading(false);
+    };
+
+    loadingCompletion();
+  }, [loadingStates.length]);
+
   return (
     <>
-      <div className="h-dvh lg:h-screen w-full bg-black relative flex flex-col items-center justify-center">
-        <div className="flex-grow w-full h-full relative">
-          <Card className="absolute left-4 top-4 right-4 lg:right-auto lg:left-6 lg:top-6 z-50 max-w-prose">
-            <Collapsible open={isInfoCollapsed} onOpenChange={setInfoCollapsed}>
-              <CardHeader>
-                <CardTitle>
-                  <div className="flex justify-between items-center">
-                    <h1 className="text-lg">How to play</h1>
-                    <CollapsibleTrigger className="font-thin" asChild>
-                      <Button variant="secondary">
-                        {isInfoCollapsed ? 'Close info' : 'Open info'}
-                      </Button>
-                    </CollapsibleTrigger>
-                  </div>
-                </CardTitle>
-                <CardDescription>
-                  Please follow the instructions below
-                </CardDescription>
-              </CardHeader>
-              <CollapsibleContent>
-                <CardContent>
+      {loading ? (
+        <Loader
+          loadingStates={loadingStates}
+          loading={loading}
+          duration={1000}
+        />
+      ) : (
+        <div className="h-dvh lg:h-screen w-full bg-black relative flex flex-col items-center justify-center">
+          <div className="flex-grow w-full h-full relative">
+            {!isInfoCollapsed && (
+              <Button
+                className="absolute left-4 top-4  lg:left-6 lg:top-6 z-50"
+                variant="secondary"
+                onClick={handleShowInfo}
+              >
+                Show info
+              </Button>
+            )}
+            <Dialog open={isInfoCollapsed} onOpenChange={setInfoCollapsed}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>How to play</DialogTitle>
+                  <DialogDescription>
+                    Please follow the instructions below
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="max-w-prose">
                   <p>
                     Your task is to find and capture all entities on the map.
                   </p>
                   <ol className="list-inside list-decimal">
-                    <li className="text-sm text-neutral-500 my-1">
-                      Please click anywhere on your map to determine your
+                    <li className="text-sm text-neutral-500 my-2">
+                      To start click anywhere on your map to determine your
                       location.
                     </li>
-                    <li className="text-sm text-neutral-500 my-1">
+                    <li className="text-sm text-neutral-500 my-2">
                       Once you have set your location, you will see a card
                       showing the distance between your location and the
                       entities.
                     </li>
-                    <li className="text-sm text-neutral-500 my-1">
+                    <li className="text-sm text-neutral-500 my-2">
                       If you are close enough to an entity a coloured line will
                       appear indicating the distance to an entity near by.
                     </li>
-                    <li className="text-sm text-neutral-500 my-1">
+                    <li className="text-sm text-neutral-500 my-2">
                       The color of the line indicates the distance to the
                       entity: The darker the color, the farther away you are,
                       and the lighter the color, the closer you are.
                     </li>
-                    <li className="text-sm text-neutral-500">
-                      To tag an entity as found, simply click on the colored icon
+                    <li className="text-sm text-neutral-500 my-2">
+                      To tag an entity as found, simply click on the colored
+                      icon
                     </li>{' '}
                     <li className="text-sm text-neutral-500">
                       To view more details of the found entity, please click on
                       the Show found entities button.
                     </li>
                   </ol>
-                  <h2 className="text-sm mt-2">Good luck!</h2>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
-          {newMarker && (
-            <Card className="absolute left-4 right-4 bottom-4 lg:left-auto lg:right-6 lg:top-6 lg:bottom-auto z-50">
-              <Collapsible
-                open={isFoundEntitiesCollapsed}
-                onOpenChange={setIsFoundEntitiesCollapsed}
-              >
-                <CardHeader>
-                  <CardTitle>Entities</CardTitle>
-                  <CardDescription>
-                    {entities.length === foundEntities.length
-                      ? 'You have found all entities!'
-                      : 'Distance to Entities from your location'}
-                  </CardDescription>
-                </CardHeader>
-                <CollapsibleContent>
-                  <CardContent>
-                    {newMarker && (
-                      <>
-                        {entities
-                          .filter((entity) => !foundEntities.includes(entity))
-                          .map((entity) => {
-                            const distance = calculateDistance(
-                              newMarker.lat,
-                              newMarker.long,
-                              entity.lat,
-                              entity.long
-                            ).toFixed(2);
-                            const direction = getDirection(
-                              newMarker.lat,
-                              newMarker.long,
-                              entity.lat,
-                              entity.long
-                            );
-
-                            return {
-                              ...entity,
-                              distance,
-                              direction,
-                            };
-                          })
-                          .sort(
-                            (a, b) =>
-                              parseFloat(a.distance) - parseFloat(b.distance)
-                          )
-                          .map((entity) => (
-                            <p
-                              key={entity.id}
-                              className="text-sm text-muted-foreground"
-                            >
-                              <strong>{entity.name}</strong> is{' '}
-                              {entity.distance} km {entity.direction}
-                            </p>
-                          ))}
-                      </>
-                    )}
-                  </CardContent>
-                </CollapsibleContent>
-                <CardFooter>
-                  <div className="flex flex-row gap-2 lg:flex-row w-full">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="secondary" className="w-full lg:w-auto">
-                        {isFoundEntitiesCollapsed
-                          ? 'Hide Entity List'
-                          : 'Show Entity List'}
-                      </Button>
-                    </CollapsibleTrigger>
-                    {foundEntities.length > 0 && (
-                      <Button
-                        onClick={handleShowFoundEntities}
-                        className="w-full lg:w-auto"
-                      >
-                        Show Found Entities
-                      </Button>
-                    )}
-                  </div>
-                </CardFooter>
-              </Collapsible>
-            </Card>
-          )}
-          <Map
-            mapboxAccessToken={mapboxToken}
-            initialViewState={{
-              longitude: 23.7609,
-              latitude: 61.4978,
-              zoom: size.width && size.width > 768 ? 2.5 : 1,
-              pitch: 0,
-              bearing: 0,
-            }}
-            style={{ width: '100%', height: '100%' }}
-            mapStyle="mapbox://styles/mapbox/dark-v11"
-            maxZoom={20}
-            onClick={handleMapClick}
-            onZoom={(e) => setZoomLevel(e.viewState.zoom)}
-          >
-            {entities.map(
-              (entity) =>
-                !foundEntities.includes(entity) && (
-                  <Marker
-                    key={entity.id}
-                    longitude={entity.long}
-                    latitude={entity.lat}
-                    anchor="bottom"
-                    onClick={() => handleMarkerClick(entity)}
-                  >
-                    <div
-                      className={`cursor-pointer ${getIconColor()} h-4 w-4 flex items-center justify-center lg:h-auto lg:w-auto`}
-                    >
-                      <DiscordLogoIcon className="h-full w-full" />
-                    </div>
-                  </Marker>
-                )
-            )}
-            {newMarker && (
-              <Marker
-                key="new-marker"
-                longitude={newMarker.long}
-                latitude={newMarker.lat}
-                anchor="bottom"
-              >
-                <div style={{ cursor: 'pointer', color: 'yellow' }}>
-                  <SewingPinIcon className="text-neutral-100" />
+                  <h2 className="text-sm mt-4">Good luck!</h2>
                 </div>
-              </Marker>
+                <DialogTrigger asChild>
+                  <Button variant="secondary" className="mt-4">
+                    Close info
+                  </Button>
+                </DialogTrigger>
+              </DialogContent>
+            </Dialog>
+            {newMarker && (
+              <Card className="absolute left-4 right-4 bottom-4 lg:left-auto lg:right-6 lg:top-6 lg:bottom-auto z-50 lg:w-auto">
+                <Collapsible
+                  open={isFoundEntitiesCollapsed}
+                  onOpenChange={setIsFoundEntitiesCollapsed}
+                >
+                  <CardHeader>
+                    <CardTitle>Entities</CardTitle>
+                    <CardDescription>
+                      {entities.length === foundEntities.length
+                        ? 'You have found all entities!'
+                        : 'Distance to Entities from your location'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CollapsibleContent>
+                    <CardContent>
+                      {newMarker && (
+                        <ul className="lg:min-w-[22rem]">
+                          {entities
+                            .filter((entity) => !foundEntities.includes(entity))
+                            .map((entity) => {
+                              const distance = calculateDistance(
+                                newMarker.lat,
+                                newMarker.long,
+                                entity.lat,
+                                entity.long
+                              ).toFixed(2);
+                              const direction = getDirection(
+                                newMarker.lat,
+                                newMarker.long,
+                                entity.lat,
+                                entity.long
+                              );
+
+                              return {
+                                ...entity,
+                                distance,
+                                direction,
+                              };
+                            })
+                            .sort(
+                              (a, b) =>
+                                parseFloat(a.distance) - parseFloat(b.distance)
+                            )
+                            .map((entity) => (
+                              <li
+                                key={entity.id}
+                                className="text-sm text-muted-foreground flex justify-between mt-2 lg:mt-1"
+                              >
+                                <strong>{entity.name}</strong>
+                                {entity.distance} km {entity.direction}
+                              </li>
+                            ))}
+                        </ul>
+                      )}
+                    </CardContent>
+                  </CollapsibleContent>
+                  <CardFooter>
+                    <div className="flex flex-row gap-2 lg:flex-row w-full">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          className="w-full lg:w-auto"
+                        >
+                          {isFoundEntitiesCollapsed
+                            ? 'Hide Entity List'
+                            : 'Show Entity List'}
+                        </Button>
+                      </CollapsibleTrigger>
+                      {foundEntities.length > 0 && (
+                        <Button
+                          onClick={handleShowFoundEntities}
+                          className="w-full lg:w-auto"
+                          variant="secondary"
+                        >
+                          Show Found Entities
+                        </Button>
+                      )}
+                    </div>
+                  </CardFooter>
+                </Collapsible>
+              </Card>
             )}
-            {newMarker && getGeoJsonLine() && (
-              <Source id="line-source" type="geojson" data={getGeoJsonLine()}>
-                <Layer
-                  id="line-layer"
-                  type="line"
-                  layout={{
-                    'line-cap': 'round',
-                    'line-join': 'round',
-                  }}
-                  paint={{
-                    'line-color': [
-                      'interpolate',
-                      ['linear'],
-                      ['get', 'distance'],
-                      0,
-                      'rgba(255, 255, 255, 1)',
-                      50,
-                      'rgba(255, 255, 0, 1)',
-                      100,
-                      'rgba(255, 165, 0, 0.8)',
-                      200,
-                      'rgba(255, 69, 0, 0.75)',
-                      300,
-                      'rgba(255, 69, 255, 0.5)',
-                      400,
-                      'rgba(0, 0, 0, 0.0)',
-                    ],
-                    'line-width': 2,
-                  }}
-                />
-              </Source>
-            )}
-          </Map>
+            <Map
+              mapboxAccessToken={mapboxToken}
+              initialViewState={{
+                longitude: 23.7609,
+                latitude: 61.4978,
+                zoom: size.width && size.width > 768 ? 2.5 : 1,
+                pitch: 0,
+                bearing: 0,
+              }}
+              style={{ width: '100%', height: '100%' }}
+              mapStyle="mapbox://styles/mapbox/dark-v11"
+              maxZoom={20}
+              onClick={handleMapClick}
+              onZoom={(e) => setZoomLevel(e.viewState.zoom)}
+            >
+              {entities.map(
+                (entity) =>
+                  !foundEntities.includes(entity) && (
+                    <Marker
+                      key={entity.id}
+                      longitude={entity.long}
+                      latitude={entity.lat}
+                      anchor="bottom"
+                      onClick={() => handleMarkerClick(entity)}
+                    >
+                      <div
+                        className={`cursor-pointer ${getIconColor()} h-4 w-4 flex items-center justify-center lg:h-auto lg:w-auto`}
+                      >
+                        <DiscordLogoIcon className="h-full w-full" />
+                      </div>
+                    </Marker>
+                  )
+              )}
+              {newMarker && (
+                <Marker
+                  key="new-marker"
+                  longitude={newMarker.long}
+                  latitude={newMarker.lat}
+                  anchor="bottom"
+                >
+                  <div style={{ cursor: 'pointer', color: 'yellow' }}>
+                    <SewingPinIcon className="text-neutral-100" />
+                  </div>
+                </Marker>
+              )}
+              {newMarker && getGeoJsonLine() && (
+                <Source id="line-source" type="geojson" data={getGeoJsonLine()}>
+                  <Layer
+                    id="line-layer"
+                    type="line"
+                    layout={{
+                      'line-cap': 'round',
+                      'line-join': 'round',
+                    }}
+                    paint={{
+                      'line-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'distance'],
+                        0,
+                        'rgba(255, 255, 255, 1)',
+                        50,
+                        'rgba(255, 255, 0, 1)',
+                        100,
+                        'rgba(255, 165, 0, 0.8)',
+                        200,
+                        'rgba(255, 69, 0, 0.75)',
+                        300,
+                        'rgba(255, 69, 255, 0.5)',
+                        400,
+                        'rgba(0, 0, 0, 0.0)',
+                      ],
+                      'line-width': 2,
+                    }}
+                  />
+                </Source>
+              )}
+            </Map>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="max-h-[calc(100dvh-1.5rem)] lg:max-h-[80vh] overflow-hidden pb-6">
+              <DialogHeader>
+                <DialogTitle>Found Entities</DialogTitle>
+                <DialogDescription>
+                  You have successfully found and captured the following
+                  entities
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="w-full h-full max-h-[35rem] lg:max-h-[60vh]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {foundEntities.map((entity) => (
+                    <EntityCard key={entity.id} entity={entity} />
+                  ))}
+                </div>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-h-[calc(100dvh-1.5rem)] lg:max-h-[80vh] overflow-hidden pb-6">
-            <DialogHeader>
-              <DialogTitle>Found Entities</DialogTitle>
-              <DialogDescription>
-                You have successfully found and captured the following entities
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="w-full h-full max-h-[35rem] lg:max-h-[60vh]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {foundEntities.map((entity) => (
-                  <EntityCard key={entity.id} entity={entity} />
-                ))}
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
-      </div>
+      )}
     </>
   );
 }

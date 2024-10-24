@@ -5,12 +5,16 @@ import React from 'react';
 
 import { CardSpotlight } from '@/components/ui/card-spotlight';
 import { Entity } from '@/lib/fetchData';
-import Image from 'next/image'; // Import Image from next/image
+import Image from 'next/image';
+import { useWindowSize } from 'usehooks-ts';
+
 interface EntityCardProps {
   entity: Entity;
 }
 
 const EntityCard: React.FC<EntityCardProps> = ({ entity }) => {
+  const size = useWindowSize();
+
   return (
     <CardSpotlight className="pb-6">
       {entity.image && (
@@ -21,8 +25,8 @@ const EntityCard: React.FC<EntityCardProps> = ({ entity }) => {
           width={0}
           height={0}
           sizes="100vw"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          className="rounded-lg z-20 relative max-h-[20rem]" // Add any desired styles
+          style={{ width: '100%', height: '100%', objectFit: size.width > 768 ? 'cover' : 'contain', objectPosition: 'center' }}
+          className="rounded-lg z-20 relative max-h-[16rem] lg:max-h-[20rem]"
         />
       )}
       <p className="text-xl font-bold relative z-20 mt-2 text-white">

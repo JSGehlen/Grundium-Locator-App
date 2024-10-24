@@ -1,7 +1,5 @@
 /** @format */
 
-// lib/fetchdata.ts
-
 interface DecodedMessage {
   id: number;
   lat: number; // Latitude
